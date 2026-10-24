@@ -29,7 +29,7 @@ For localhost development, use a local bridge or add your local origin to the br
 ## Data and privacy
 
 - Products and inventory: [LCBO.dev](https://lcbo.dev), an independent service updated daily. This project is not affiliated with LCBO. Stock is not reserved; confirm with the store before making a trip.
-- Addresses: [OpenStreetMap Nominatim](https://nominatim.org). Searches are submitted explicitly, with cached results in the bridge.
+- Addresses: [OpenStreetMap Nominatim](https://nominatim.org), with [Esri World Geocoding](https://developers.arcgis.com/rest/geocode/) for intersections and fallback. Searches are submitted explicitly. A bounded in-memory cache avoids the hosting runtime’s unavailable default-cache API.
 - Coordinates are sent through the bridge to LCBO.dev for nearby inventory. Distances are straight-line estimates.
 - Saved products and theme preference are stored only in the visitor's browser.
-- Missing inventory records do not confirm zero stock. API outages display retryable errors instead of fabricated results.
+- Missing inventory records do not confirm zero stock. Transient LCBO.dev errors are retried twice before displaying a retryable error instead of fabricated results.

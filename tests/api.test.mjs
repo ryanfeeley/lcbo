@@ -20,3 +20,21 @@ test('GitHub Pages origin can read the API; unrelated origins cannot',async()=>{
  const options=await handlePublicAPI(new Request('https://api.example/api/products',{method:'OPTIONS',headers:{Origin:'https://ryanfeeley.github.io'}}));
  assert.equal(options.status,204);
 });
+
+test('geocoding works when the host forbids access to the default cache',async()=>{
+ const prior=Object.getOwnPropertyDescriptor(globalThis,'caches');
+ Object.defineProperty(globalThis,'caches',{configurable:true,get(){throw Error('This Worker is not permitted to access the default cache.');}});
+ globalThis.fetch=async()=>Response.json([{lat:'43.65',lon:'-79.38',display_name:'100 Queen St W, Toronto',address:{state:'Ontario'}}]);
+ try{const r=await handleAPI(request('/api/address?q=100+Queen+St+W'));assert.equal(r.status,200);assert.equal((await r.json())[0].lat,'43.65');}
+ finally{if(prior)Object.defineProperty(globalThis,'caches',prior);else delete globalThis.caches;}
+});
+
+test('intersection search normalizes and and returns Ontario intersection coordinates',async()=>{
+ globalThis.fetch=async url=>{const u=new URL(url);assert.equal(u.hostname,'geocode.arcgis.com');assert.match(u.searchParams.get('SingleLine'),/Yonge & Bloor/);return Response.json({candidates:[{score:99,address:'Yonge St & Bloor St, Toronto',location:{x:-79.38675,y:43.67023},attributes:{Region:'Ontario'}}]});};
+ const r=await handleAPI(request('/api/address?q=Yonge+and+Bloor,+Toronto'));assert.equal(r.status,200);assert.equal((await r.json())[0].lat,'43.67023');
+});
+
+test('product lookup recovers from a transient upstream GraphQL failure',async()=>{
+ let calls=0;globalThis.fetch=async()=>++calls===1?Response.json({errors:[{message:'Unexpected error'}],data:null}):Response.json({data:{product:{sku:'316570',name:'Oyster Bay Sauvignon Blanc'}}});
+ const r=await handleAPI(request('/api/products?q=316570'));assert.equal(r.status,200);assert.equal((await r.json()).products[0].name,'Oyster Bay Sauvignon Blanc');assert.equal(calls,2);
+});
