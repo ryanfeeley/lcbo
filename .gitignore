@@ -1,0 +1,4 @@
+dist/
+worker/index.js
+*.tar.gz
+pages-dist/
