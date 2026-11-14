@@ -33,3 +33,4 @@ For localhost development, use a local bridge or add your local origin to the br
 - Coordinates are sent through the bridge to LCBO.dev for nearby inventory. Distances are straight-line estimates.
 - Saved products and theme preference are stored only in the visitor's browser.
 - Missing inventory records do not confirm zero stock. Transient LCBO.dev errors are retried twice before displaying a retryable error instead of fabricated results.
+- Inventory failures preserve matching products and provide an official LCBO search link by SKU. On November 14, 2026, product-only queries succeeded while even minimal inventory and store queries returned upstream internal server errors. This external outage cannot be repaired by retrying or changing the bridge's valid query.

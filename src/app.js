@@ -33,7 +33,7 @@ function renderStock(sku){
  const summary=$('stock-summary-'+sku),detail=$('stock-detail-'+sku);if(!summary||!detail)return;
  const stock=state.stocks.get(sku);
  if(!stock||stock.loading&&!stock.rows?.length){summary.innerHTML='<span class="spinner" aria-hidden="true"></span>Loading stock…';detail.innerHTML='<p class="stock-note">Looking up nearby store quantities…</p>';return;}
- if(stock.error&&!stock.rows?.length){summary.innerHTML='<span class="stock-unavailable">Inventory unavailable</span>';detail.innerHTML=`<p class="stock-note stock-error">${esc(stock.error)} <button class="text-button" data-retry-stock="${esc(sku)}">Retry inventory</button></p>`;return;}
+ if(stock.error&&!stock.rows?.length){summary.innerHTML='<span class="stock-unavailable">Inventory unavailable</span>';const message=stock.error.startsWith('LCBO.dev')?'LCBO.dev’s inventory service is unavailable. Stock quantities cannot be shown.':stock.error;detail.innerHTML=`<p class="stock-note stock-error">${esc(message)}</p><div class="stock-footer"><a class="stock-external" href="https://www.lcbo.com/en/catalogsearch/result/?q=${encodeURIComponent(sku)}" target="_blank" rel="noopener" aria-label="Check SKU ${esc(sku)} at LCBO (opens in a new tab)">Check at LCBO ↗</a><button class="text-button" data-retry-stock="${esc(sku)}">Retry inventory</button></div>`;return;}
  const rows=stock.rows||[];
  if(!rows.length){summary.innerHTML='<span class="stock-unavailable">No reported stock</span>';detail.innerHTML='<p class="stock-note">No matching inventory records within this distance. Try a larger radius or lower the minimum quantity. Missing records do not confirm zero stock.</p>';return;}
  const nearest=rows[0];summary.innerHTML=`<span class="quantity">${esc(nearest.quantity)}</span><span>${state.sort==='quantity'?'at best-stocked store':'at nearest store'}</span>`;
@@ -86,5 +86,12 @@ renderSaved();
 function setLocationMode(mode){const current=mode==='current';$('mode-current').setAttribute('aria-pressed',String(current));$('mode-address').setAttribute('aria-pressed',String(!current));$('currentLocationPanel').hidden=!current;$('addressLocationPanel').hidden=current;}
 $('mode-current').onclick=()=>setLocationMode('current');
 $('mode-address').onclick=()=>setLocationMode('address');
-try{$('theme').value=localStorage.getItem('lcbo-theme')||'system';}catch{}
-$('theme').onchange=e=>{const theme=e.target.value;if(theme==='system')delete document.documentElement.dataset.theme;else document.documentElement.dataset.theme=theme;try{localStorage.setItem('lcbo-theme',theme);}catch{}};
+function setTheme(mode){
+ if(!['system','light','dark'].includes(mode))mode='system';
+ document.documentElement.dataset.theme=mode;
+ document.querySelectorAll('[data-theme-mode]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.themeMode===mode)));
+ try{localStorage.setItem('lcbo-theme',mode);}catch{}
+}
+let savedTheme='system';try{savedTheme=localStorage.getItem('lcbo-theme')||'system';}catch{}
+setTheme(savedTheme);
+document.querySelectorAll('[data-theme-mode]').forEach(button=>button.addEventListener('click',()=>setTheme(button.dataset.themeMode)));

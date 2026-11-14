@@ -36,6 +36,8 @@ test('an inventory failure keeps the matching product visible and reports a per-
  assert.match(elements.get('results').innerHTML,/Oyster Bay Sauvignon Blanc/);
  assert.match(elements.get('stock-summary-316570').innerHTML,/Inventory unavailable/);
  assert.match(elements.get('stock-detail-316570').innerHTML,/Retry inventory/);
+ assert.match(elements.get('stock-detail-316570').innerHTML,/https:\/\/www\.lcbo\.com\/en\/catalogsearch\/result\/\?q=316570/);
+ assert.match(elements.get('stock-detail-316570').innerHTML,/Stock quantities cannot be shown/);
  assert.doesNotMatch(elements.get('results').innerHTML,/We couldn’t load the data/);
 });
 test('changing location refreshes inventory and ignores the old location response',async()=>{
