@@ -1,7 +1,7 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const state={inventoryGeneration:0,stocks:new Map(),lat:43.6532,lon:-79.3832,label:'downtown Toronto',product:null,products:[],inventory:[],cursor:null,total:0,min:1,sort:'distance',store:'',request:0,productCursor:null,search:''};
+const state={inventoryGeneration:0,stocks:new Map(),lat:null,lon:null,label:'',product:null,products:[],inventory:[],cursor:null,total:0,min:1,sort:'distance',store:'',request:0,productCursor:null,search:''};
 let saved=[];try{saved=JSON.parse(localStorage.getItem('lcbo-saved')||'[]');if(!Array.isArray(saved))saved=[];saved=saved.filter(x=>x&&typeof x.sku==='string'&&typeof x.name==='string').slice(0,30);}catch{}
 function saveList(){try{localStorage.setItem('lcbo-saved',JSON.stringify(saved));}catch{}renderSaved();}
 function renderSaved(){$('saved').innerHTML=saved.length?saved.map(p=>`<div class="saved-item"><button data-saved="${esc(p.sku)}">${esc(p.name)}<small>SKU ${esc(p.sku)}</small></button><button class="remove" data-remove="${esc(p.sku)}" aria-label="Remove ${esc(p.name)}">×</button></div>`).join(''):'<div class="saved-empty">Tap ☆ on a product to save it here.<br>Saved on this browser.</div>';}
@@ -61,7 +61,7 @@ async function refreshInventory(reset=true){
  async function worker(){while(queue.length&&generation===state.inventoryGeneration){await loadStock(queue.shift(),generation);}}
  await Promise.all([worker(),worker()]);
 }
-function setLocation(lat,lon,label){state.lat=lat;state.lon=lon;state.label=label;$('location-label').textContent='Search area: '+label;$('loc-sub').textContent=label;$('location-error').hidden=true;$('addresses').innerHTML='';if(state.products.length)refreshInventory();}
+function setLocation(lat,lon,label){if(!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180){locationError('Choose a valid location.');return;}state.lat=lat;state.lon=lon;state.label=label;$('location-content').hidden=false;$('location-label').hidden=false;$('location-label').textContent='Search area: '+label;$('loc-sub').textContent=label;$('location-error').hidden=true;$('addresses').innerHTML='';if(state.products.length)refreshInventory();}
 function locationError(message){$('location-error').textContent=message;$('location-error').hidden=false;}
 let addressRequest=0;
 async function findAddress(){const q=$('address').value.trim();if(!q){locationError('Enter an Ontario address, intersection, or postal code first.');return;}const id=++addressRequest;$('find-address').disabled=true;$('addresses').innerHTML='<span class="hint">Looking up address…</span>';$('location-error').hidden=true;try{const d=await api('/api/address',{q});if(id!==addressRequest)return;if(!d.length){$('addresses').innerHTML='';locationError('No Ontario address found. Try a full street address, city, or postal code.');return;}$('addresses').innerHTML='<span class="hint">Choose an address to set your search location:</span>'+d.map((r,i)=>`<button class="address-option" data-address="${i}">${esc(r.display_name)}</button>`).join('');$('addresses').onclick=e=>{const b=e.target.closest('[data-address]');if(b){const r=d[+b.dataset.address];$('address').value=r.display_name;setLocation(+r.lat,+r.lon,r.display_name.split(',').slice(0,2).join(','));}};}catch(e){$('addresses').innerHTML='';locationError(e.message);}finally{$('find-address').disabled=false;}}
